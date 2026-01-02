@@ -30,6 +30,7 @@ export default function Home() {
   const [taskProposal, setTaskProposal] = useState(null);
   const [updateProposal, setUpdateProposal] = useState(null);
   const [deleteProposal, setDeleteProposal] = useState(null);
+  const [subtaskProposal, setSubtaskProposal] = useState(null);
 
 
   const today = new Date().toISOString().split("T")[0];
@@ -157,6 +158,20 @@ export default function Home() {
         {
           role: "ai",
           content: "I found the task you want to delete. Please confirm."
+        }
+      ]);
+    }
+    else if (data.type === "subtask_proposal") {
+      setSubtaskProposal({
+        taskId: data.taskId,
+        subtasks: data.subtasks
+      });
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "ai",
+          content: "I broke the task into smaller actionable steps. Review them below."
         }
       ]);
     }
@@ -565,6 +580,57 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {subtaskProposal && (
+            <div className="mt-3 border rounded-md p-3 bg-gray-50 text-sm max-h-48 overflow-y-auto flex flex-col">
+              <div className="flex items-center justify-between mb-2 sticky top-0 bg-gray-50">
+                <p className="font-medium text-black">
+                  Suggested subtasks
+                </p>
+                <button
+                  onClick={() => setSubtaskProposal(null)}
+                  className="text-gray-400 hover:text-gray-600 text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {subtaskProposal.subtasks.map((s, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start justify-between py-1"
+                  >
+                    <div>
+                      <p className="font-medium text-black">{s.title}</p>
+                      <p className="text-xs text-gray-600">{s.description}</p>
+                    </div>
+
+                    <button
+                      onClick={async () => {
+                        await fetch("http://localhost:4000/tasks", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            title: s.title,
+                            description: s.description,
+                            status: "todo",
+                            priority: "medium",
+                            dueDate: null
+                          })
+                        });
+                        fetchTasks();
+                      }}
+                      className="text-xs bg-green-600 text-white px-2 py-1 rounded flex-shrink-0"
+                    >
+                      Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
 
 
 
