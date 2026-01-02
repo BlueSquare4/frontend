@@ -15,8 +15,11 @@ export default function Home() {
   const [dueDate, setDueDate] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  // Suggestions
-  const [suggestions, setSuggestions] = useState([]);
+  // suggestions
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [titleFocused, setTitleFocused] = useState(false);
+
 
   // Copilot
   const [copilotOpen, setCopilotOpen] = useState(false);
@@ -50,20 +53,30 @@ export default function Home() {
   // Debounced suggestions
   useEffect(() => {
     if (!title.trim()) {
-      setSuggestions([]);
+      setAiSuggestions([]);
       return;
     }
 
-    const timer = setTimeout(() => {
-      setSuggestions([
-        `Break "${title}" into subtasks`,
-        `Set priority for "${title}"`,
-        `Add a due date for "${title}"`
-      ]);
-    }, 400);
+    const timer = setTimeout(async () => {
+      try {
+        setLoadingSuggestions(true);
+        const res = await fetch("http://localhost:4000/ai/task-suggestions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title })
+        });
+        const data = await res.json();
+        setAiSuggestions(data.titleSuggestions || []);
+      } catch {
+        setAiSuggestions([]);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    }, 400); // debounce
 
     return () => clearTimeout(timer);
   }, [title]);
+
 
   const addTask = async () => {
     if (!title.trim()) return;
@@ -85,7 +98,7 @@ export default function Home() {
     setStatus("todo");
     setPriority("medium");
     setDueDate("");
-    setSuggestions([]);
+    setAiSuggestions([]);
     fetchTasks();
   };
 
@@ -134,26 +147,55 @@ export default function Home() {
         {/* Add Task */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="space-y-3">
-            <input
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Task title"
-              className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
-            />
+            <div
+              className="relative"
+              onMouseDown={() => setTitleFocused(true)}
+            >
+              <input
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                onFocus={() => setTitleFocused(true)}
+                onBlur={() => setTitleFocused(false)}
+                placeholder="Task title"
+                className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
+              />
 
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="border rounded-md bg-gray-50 text-sm">
-                {suggestions.map((s, i) => (
-                  <div
-                    key={i}
-                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
-                  >
-                    {s}
-                  </div>
-                ))}
-              </div>
-            )}
+              {titleFocused && (loadingSuggestions || aiSuggestions.length > 0) && (
+                <div className="absolute z-10 mt-1 w-full border rounded-md bg-gray-50 text-sm shadow">
+                  {loadingSuggestions && (
+                    <div className="px-3 py-2 text-gray-500">
+                      Improving title…
+                    </div>
+                  )}
+
+                  {aiSuggestions.map((s, i) => (
+                    <div
+                      key={i}
+                      onMouseDown={async () => {
+                        // mouseDown fires BEFORE blur — this is the key
+                        setTitle(s);
+                        setAiSuggestions([]);
+
+                        try {
+                          const res = await fetch("http://localhost:4000/ai/task-suggestions", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ title: s })
+                          });
+                          const data = await res.json();
+                          setDescription(data.generatedDescription || "");
+                        } catch { }
+                      }}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                    >
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+
 
             <textarea
               value={description}
@@ -162,6 +204,7 @@ export default function Home() {
               className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
               rows={2}
             />
+
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <select
