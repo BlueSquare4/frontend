@@ -1,74 +1,305 @@
 "use client";
+import ReactMarkdown from "react-markdown";
+import { useRef } from "react";
+
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<Array<{ id: string; title: string; description: string; status: string; priority: string; dueDate: string | null }>>([]);
+
+  // Task form
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState("todo");
+  const [priority, setPriority] = useState("medium");
+  const [dueDate, setDueDate] = useState("");
+
+  // Suggestions
+  const [suggestions, setSuggestions] = useState([]);
+
+  // Copilot
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotInput, setCopilotInput] = useState("");
-  const [copilotResponse, setCopilotResponse] = useState("");
+  const [messages, setMessages] = useState([]);
+  const chatEndRef = useRef(null);
+  const [loadingAI, setLoadingAI] = useState(false);
+
+  const fetchTasks = async () => {
+    const res = await fetch("http://localhost:4000/tasks");
+    setTasks(await res.json());
+  };
+
+  const updateTask = async (id, updates) => {
+    await fetch(`http://localhost:4000/tasks/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    fetchTasks();
+  };
+
 
   useEffect(() => {
-    fetch("http://localhost:4000/tasks")
-      .then(res => res.json())
-      .then(setTasks);
+    fetchTasks();
   }, []);
 
+  // Debounced suggestions
+  useEffect(() => {
+    if (!title.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setSuggestions([
+        `Break "${title}" into subtasks`,
+        `Set priority for "${title}"`,
+        `Add a due date for "${title}"`
+      ]);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [title]);
+
   const addTask = async () => {
+    if (!title.trim()) return;
+
     await fetch("http://localhost:4000/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title })
+      body: JSON.stringify({
+        title,
+        description,
+        status,
+        priority,
+        dueDate: dueDate || null
+      })
     });
+
     setTitle("");
-    const updated = await fetch("http://localhost:4000/tasks").then(res => res.json());
-    setTasks(updated);
+    setDescription("");
+    setStatus("todo");
+    setPriority("medium");
+    setDueDate("");
+    setSuggestions([]);
+    fetchTasks();
   };
 
   const askCopilot = async () => {
-    const res = await fetch("http://localhost:4000/copilot/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: copilotInput })
-    });
-    const data = await res.json();
-    setCopilotResponse(data.response);
-  };
+  if (!copilotInput.trim()) return;
+
+  const userMsg = { role: "user", content: copilotInput };
+  setMessages(prev => [...prev, userMsg]);
+  setCopilotInput("");
+  setLoadingAI(true);
+
+  const res = await fetch("http://localhost:4000/copilot/ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: userMsg.content })
+  });
+
+  const data = await res.json();
+
+  const aiMsg = { role: "ai", content: data.response };
+  setMessages(prev => [...prev, aiMsg]);
+  setLoadingAI(false);
+};
+
+useEffect(() => {
+  chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [messages]);
+
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Task Workspace</h1>
+    <main className="min-h-screen bg-gray-50 p-8 relative">
+      <div className="mx-auto max-w-6xl">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+          Task Workspace
+        </h1>
 
-      <section>
-        <h3>Add Task</h3>
-        <input
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="Task title"
-        />
-        <button onClick={addTask}>Add</button>
-      </section>
+        {/* Add Task */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="space-y-3">
+            <input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Task title"
+              className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
+            />
 
-      <section>
-        <h3>Tasks</h3>
-        <ul>
-          {tasks.map(t => (
-            <li key={t.id}>
-              {t.title} — {t.status} ({t.priority})
-            </li>
-          ))}
-        </ul>
-      </section>
+            {/* Suggestions */}
+            {suggestions.length > 0 && (
+              <div className="border rounded-md bg-gray-50 text-sm">
+                {suggestions.map((s, i) => (
+                  <div
+                    key={i}
+                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                  >
+                    {s}
+                  </div>
+                ))}
+              </div>
+            )}
 
-      <section>
-        <h3>Copilot</h3>
-        <input
-          value={copilotInput}
-          onChange={e => setCopilotInput(e.target.value)}
-          placeholder="Ask the copilot..."
-        />
-        <button onClick={askCopilot}>Ask</button>
-        <p>{copilotResponse}</p>
-      </section>
+            <textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Description (optional)"
+              className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
+              rows={2}
+            />
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <select
+                value={status}
+                onChange={e => setStatus(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm text-black"
+              >
+                <option value="todo">Todo</option>
+                <option value="in-progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
+
+              <select
+                value={priority}
+                onChange={e => setPriority(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm text-black"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm text-black"
+              />
+
+              <button
+                onClick={addTask}
+                className="bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800"
+              >
+                Add Task
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tasks */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tasks</h2>
+          <ul className="divide-y">
+            {tasks.map(t => (
+              <li key={t.id} className="py-4 flex justify-between items-start gap-4">
+                {/* Task info */}
+                <div>
+                  <p className="text-sm font-medium text-black">
+                    {t.title}
+                  </p>
+                  {t.description && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {t.description}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {t.status} · {t.priority}
+                    {t.dueDate && ` · due ${t.dueDate}`}
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => updateTask(t.id, { status: "in-progress" })}
+                    className="text-xs text-blue-600 px-2 py-1 border rounded hover:bg-gray-100"
+                  >
+                    In Progress
+                  </button>
+
+                  <button
+                    onClick={() => updateTask(t.id, { status: "done" })}
+                    className="text-xs text-green-600 px-2 py-1 border rounded hover:bg-gray-100"
+                  >
+                    Done
+                  </button>
+
+                  <button
+                    onClick={() => updateTask(t.id, { priority: "high" })}
+                    className="text-xs text-red-600 px-2 py-1 border rounded hover:bg-gray-100"
+                  >
+                    High Priority
+                  </button>
+                </div>
+              </li>
+            ))}
+
+            {tasks.length === 0 && (
+              <p className="text-sm text-gray-500 py-6 text-center">
+                No tasks yet.
+              </p>
+            )}
+          </ul>
+        </div>
+
+      </div>
+
+      {/* Copilot Floating Button */}
+      <button
+        onClick={() => setCopilotOpen(!copilotOpen)}
+        className="fixed bottom-6 right-6 h-12 w-12 rounded-full bg-black text-white flex items-center justify-center shadow-lg"
+      >
+        ✦
+      </button>
+
+      {copilotOpen && (
+  <div className="fixed bottom-20 right-6 w-96 bg-white rounded-lg shadow-lg flex flex-col max-h-[70vh]">
+    
+    {/* Chat messages */}
+    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {messages.map((msg, i) => (
+        <div
+          key={i}
+          className={`text-sm rounded-md px-3 py-2 max-w-[90%]
+            ${msg.role === "user"
+              ? "bg-black text-white ml-auto"
+              : "bg-gray-100 text-black mr-auto"
+            }`}
+        >
+          <ReactMarkdown>
+            {msg.content}
+          </ReactMarkdown>
+        </div>
+      ))}
+
+      {loadingAI && (
+        <div className="text-xs text-gray-500">Copilot is thinking…</div>
+      )}
+
+      <div ref={chatEndRef} />
+    </div>
+
+    {/* Input box (sticks to bottom) */}
+    <div className="border-t p-3">
+      <textarea
+        value={copilotInput}
+        onChange={e => setCopilotInput(e.target.value)}
+        placeholder="Ask the copilot…"
+        rows={2}
+        className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
+      />
+      <button
+        onClick={askCopilot}
+        className="mt-2 w-full bg-black text-white rounded-md text-sm py-2 hover:bg-gray-800"
+      >
+        Ask
+      </button>
+    </div>
+  </div>
+)}
+
     </main>
   );
 }
