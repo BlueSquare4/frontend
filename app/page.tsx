@@ -13,6 +13,7 @@ export default function Home() {
   const [status, setStatus] = useState("todo");
   const [priority, setPriority] = useState("medium");
   const [dueDate, setDueDate] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   // Suggestions
   const [suggestions, setSuggestions] = useState([]);
@@ -85,30 +86,39 @@ export default function Home() {
     fetchTasks();
   };
 
+  const deleteTask = async (id) => {
+    await fetch(`http://localhost:4000/tasks/${id}`, {
+      method: "DELETE"
+    });
+    setConfirmDelete(null);
+    fetchTasks();
+  };
+
+
   const askCopilot = async () => {
-  if (!copilotInput.trim()) return;
+    if (!copilotInput.trim()) return;
 
-  const userMsg = { role: "user", content: copilotInput };
-  setMessages(prev => [...prev, userMsg]);
-  setCopilotInput("");
-  setLoadingAI(true);
+    const userMsg = { role: "user", content: copilotInput };
+    setMessages(prev => [...prev, userMsg]);
+    setCopilotInput("");
+    setLoadingAI(true);
 
-  const res = await fetch("http://localhost:4000/copilot/ask", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: userMsg.content })
-  });
+    const res = await fetch("http://localhost:4000/copilot/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userMsg.content })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  const aiMsg = { role: "ai", content: data.response };
-  setMessages(prev => [...prev, aiMsg]);
-  setLoadingAI(false);
-};
+    const aiMsg = { role: "ai", content: data.response };
+    setMessages(prev => [...prev, aiMsg]);
+    setLoadingAI(false);
+  };
 
-useEffect(() => {
-  chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-}, [messages]);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
 
   return (
@@ -190,7 +200,7 @@ useEffect(() => {
 
         {/* Tasks */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tasks</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Tasks</h2>
           <ul className="divide-y">
             {tasks.map(t => (
               <li key={t.id} className="py-4 flex justify-between items-start gap-4">
@@ -220,15 +230,50 @@ useEffect(() => {
                   </button>
 
                   <button
-                    onClick={() => updateTask(t.id, { status: "done" })}
-                    className="text-xs text-green-600 px-2 py-1 border rounded hover:bg-gray-100"
+                    onClick={() => setConfirmDelete(t)}
+                    className="text-xs px-2 text-red-600 py-1 border rounded hover:bg-gray-100"
                   >
                     Done
                   </button>
 
+                  {confirmDelete && (
+                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                      <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          Delete this task?
+                        </h3>
+
+                        <p className="text-sm text-gray-600 mt-2">
+                          You marked <span className="font-medium text-black">
+                            “{confirmDelete.title}”
+                          </span> as done.
+                          Would you like to delete it now?
+                        </p>
+
+                        <div className="mt-5 flex justify-end gap-3">
+                          <button
+                            onClick={() => setConfirmDelete(null)}
+                            className="px-4 py-2 text-sm rounded-md bg-red-100 text-red-700 hover:bg-red-200"
+                          >
+                            No, keep it for later
+                          </button>
+
+                          <button
+                            onClick={() => deleteTask(confirmDelete.id)}
+                            className="px-4 py-2 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
+                          >
+                            Yes, delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+
+
                   <button
                     onClick={() => updateTask(t.id, { priority: "high" })}
-                    className="text-xs text-red-600 px-2 py-1 border rounded hover:bg-gray-100"
+                    className="text-xs text-green-600 px-2 py-1 border rounded hover:bg-gray-100"
                   >
                     High Priority
                   </button>
@@ -255,50 +300,50 @@ useEffect(() => {
       </button>
 
       {copilotOpen && (
-  <div className="fixed bottom-20 right-6 w-96 bg-white rounded-lg shadow-lg flex flex-col max-h-[70vh]">
-    
-    {/* Chat messages */}
-    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-      {messages.map((msg, i) => (
-        <div
-          key={i}
-          className={`text-sm rounded-md px-3 py-2 max-w-[90%]
+        <div className="fixed bottom-20 right-6 w-96 bg-white rounded-lg shadow-lg flex flex-col max-h-[70vh]">
+
+          {/* Chat messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`text-sm rounded-md px-3 py-2 max-w-[90%]
             ${msg.role === "user"
-              ? "bg-black text-white ml-auto"
-              : "bg-gray-100 text-black mr-auto"
-            }`}
-        >
-          <ReactMarkdown>
-            {msg.content}
-          </ReactMarkdown>
+                    ? "bg-black text-white ml-auto"
+                    : "bg-gray-100 text-black mr-auto"
+                  }`}
+              >
+                <ReactMarkdown>
+                  {msg.content}
+                </ReactMarkdown>
+              </div>
+            ))}
+
+            {loadingAI && (
+              <div className="text-xs text-gray-500">Copilot is thinking…</div>
+            )}
+
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input box (sticks to bottom) */}
+          <div className="border-t p-3">
+            <textarea
+              value={copilotInput}
+              onChange={e => setCopilotInput(e.target.value)}
+              placeholder="Ask the copilot…"
+              rows={2}
+              className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
+            />
+            <button
+              onClick={askCopilot}
+              className="mt-2 w-full bg-black text-white rounded-md text-sm py-2 hover:bg-gray-800"
+            >
+              Ask
+            </button>
+          </div>
         </div>
-      ))}
-
-      {loadingAI && (
-        <div className="text-xs text-gray-500">Copilot is thinking…</div>
       )}
-
-      <div ref={chatEndRef} />
-    </div>
-
-    {/* Input box (sticks to bottom) */}
-    <div className="border-t p-3">
-      <textarea
-        value={copilotInput}
-        onChange={e => setCopilotInput(e.target.value)}
-        placeholder="Ask the copilot…"
-        rows={2}
-        className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
-      />
-      <button
-        onClick={askCopilot}
-        className="mt-2 w-full bg-black text-white rounded-md text-sm py-2 hover:bg-gray-800"
-      >
-        Ask
-      </button>
-    </div>
-  </div>
-)}
 
     </main>
   );
