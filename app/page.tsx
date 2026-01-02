@@ -25,6 +25,9 @@ export default function Home() {
   const chatEndRef = useRef(null);
   const [loadingAI, setLoadingAI] = useState(false);
 
+  const today = new Date().toISOString().split("T")[0];
+
+
   const fetchTasks = async () => {
     const res = await fetch("http://localhost:4000/tasks");
     setTasks(await res.json());
@@ -184,9 +187,11 @@ export default function Home() {
               <input
                 type="date"
                 value={dueDate}
+                min={today}
                 onChange={e => setDueDate(e.target.value)}
                 className="border rounded-md px-3 py-2 text-sm text-black"
               />
+
 
               <button
                 onClick={addTask}
