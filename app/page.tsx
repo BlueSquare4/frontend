@@ -28,6 +28,8 @@ export default function Home() {
   const chatEndRef = useRef(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const [taskProposal, setTaskProposal] = useState(null);
+  const [updateProposal, setUpdateProposal] = useState(null);
+  const [deleteProposal, setDeleteProposal] = useState(null);
 
 
   const today = new Date().toISOString().split("T")[0];
@@ -112,7 +114,6 @@ export default function Home() {
     fetchTasks();
   };
 
-
   const askCopilot = async () => {
     if (!copilotInput.trim()) return;
 
@@ -131,19 +132,52 @@ export default function Home() {
 
     if (data.type === "task_proposal") {
       setTaskProposal(data.task);
-    } else {
-      const aiMsg = { role: "ai", content: data.response };
-      setMessages(prev => [...prev, aiMsg]);
     }
+    else if (data.type === "update_proposal") {
+      setUpdateProposal({
+        taskId: data.taskId,
+        updates: data.updates
+      });
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "ai",
+          content: "I found the task you mentioned and prepared an update. Please confirm below."
+        }
+      ]);
+    }
+    else if (data.type === "delete_proposal") {
+      setDeleteProposal({
+        taskId: data.taskId
+      });
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "ai",
+          content: "I found the task you want to delete. Please confirm."
+        }
+      ]);
+    }
+    else {
+      setMessages(prev => [
+        ...prev,
+        { role: "ai", content: data.response }
+      ]);
+    }
+
+
     setLoadingAI(false);
+
   };
 
   const addSystemMessage = (text) => {
-  setMessages(prev => [
-    ...prev,
-    { role: "ai", content: text }
-  ]);
-};
+    setMessages(prev => [
+      ...prev,
+      { role: "ai", content: text }
+    ]);
+  };
 
 
   useEffect(() => {
@@ -434,6 +468,105 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {updateProposal && (
+            <div className="mt-3 border rounded-md p-3 bg-gray-50 text-sm">
+              <p className="font-medium text-gray-900 mb-2">
+                Update this task?
+              </p>
+
+              <ul className="text-xs text-gray-700 space-y-1">
+                {Object.entries(updateProposal.updates).map(([k, v]) => (
+                  <li key={k}>
+                    <b>{k}:</b> {String(v)}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={async () => {
+                    await fetch(
+                      `http://localhost:4000/tasks/${updateProposal.taskId}`,
+                      {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(updateProposal.updates)
+                      }
+                    );
+
+                    setMessages(prev => [
+                      ...prev,
+                      {
+                        role: "ai",
+                        content: "Task updated successfully."
+                      }
+                    ]);
+
+                    setUpdateProposal(null);
+                    fetchTasks();
+                  }}
+                  className="flex-1 bg-green-600 text-white rounded-md py-1"
+                >
+                  Apply update
+                </button>
+
+                <button
+                  onClick={() => setUpdateProposal(null)}
+                  className="flex-1 bg-red-100 text-red-700 rounded-md py-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+
+          {deleteProposal && (
+            <div className="mt-3 border rounded-md p-3 bg-red-50 text-sm">
+              <p className="font-medium text-red-700 mb-2">
+                Delete this task?
+              </p>
+
+              <p className="text-xs text-gray-700">
+                This action cannot be undone.
+              </p>
+
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={async () => {
+                    await fetch(
+                      `http://localhost:4000/tasks/${deleteProposal.taskId}`,
+                      { method: "DELETE" }
+                    );
+
+                    setMessages(prev => [
+                      ...prev,
+                      {
+                        role: "ai",
+                        content: "Task deleted."
+                      }
+                    ]);
+
+                    setDeleteProposal(null);
+                    fetchTasks();
+                  }}
+                  className="flex-1 bg-red-600 text-white rounded-md py-1"
+                >
+                  Yes, delete
+                </button>
+
+                <button
+                  onClick={() => setDeleteProposal(null)}
+                  className="flex-1 bg-gray-200 text-gray-800 rounded-md py-1"
+                >
+                  Keep it
+                </button>
+              </div>
+            </div>
+          )}
+
+
 
 
           {/* Input box (sticks to bottom) */}
