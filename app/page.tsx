@@ -27,6 +27,8 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const chatEndRef = useRef(null);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [taskProposal, setTaskProposal] = useState(null);
+
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -127,10 +129,22 @@ export default function Home() {
 
     const data = await res.json();
 
-    const aiMsg = { role: "ai", content: data.response };
-    setMessages(prev => [...prev, aiMsg]);
+    if (data.type === "task_proposal") {
+      setTaskProposal(data.task);
+    } else {
+      const aiMsg = { role: "ai", content: data.response };
+      setMessages(prev => [...prev, aiMsg]);
+    }
     setLoadingAI(false);
   };
+
+  const addSystemMessage = (text) => {
+  setMessages(prev => [
+    ...prev,
+    { role: "ai", content: text }
+  ]);
+};
+
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -373,6 +387,54 @@ export default function Home() {
 
             <div ref={chatEndRef} />
           </div>
+          {taskProposal && (
+            <div className="mt-3 border rounded-md p-3 bg-gray-50 text-sm">
+              <p className="font-medium text-gray-900 mb-2">
+                Create this task?
+              </p>
+
+              <ul className="text-xs text-gray-700 space-y-1">
+                <li><b>Title:</b> {taskProposal.title}</li>
+                <li><b>Description:</b> {taskProposal.description}</li>
+                <li><b>Status:</b> {taskProposal.status}</li>
+                <li><b>Priority:</b> {taskProposal.priority}</li>
+                <li><b>Due:</b> {taskProposal.dueDate ?? today}</li>
+              </ul>
+
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={async () => {
+                    await fetch("http://localhost:4000/tasks", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(taskProposal)
+                    });
+
+                    addSystemMessage(
+                      `Task **"${taskProposal.title}"** has been created.`
+                    );
+
+                    setTaskProposal(null);
+                    fetchTasks();
+                    setCopilotInput("");
+                    addSystemMessage("Anything else I can help you with?");
+                  }}
+                  className="flex-1 bg-green-600 text-white rounded-md py-1"
+                >
+
+                  Create
+                </button>
+
+                <button
+                  onClick={() => setTaskProposal(null)}
+                  className="flex-1 bg-red-100 text-red-700 rounded-md py-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
 
           {/* Input box (sticks to bottom) */}
           <div className="border-t p-3">
