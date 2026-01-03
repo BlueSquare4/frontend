@@ -31,6 +31,7 @@ export default function Home() {
   const [updateProposal, setUpdateProposal] = useState(null);
   const [deleteProposal, setDeleteProposal] = useState(null);
   const [subtaskProposal, setSubtaskProposal] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
 
 
   const today = new Date().toISOString().split("T")[0];
@@ -201,14 +202,26 @@ export default function Home() {
 
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 relative">
+    <main className={`min-h-screen p-8 relative transition-colors ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <div className="mx-auto max-w-6xl">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">
-          Task Workspace
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Task Workspace
+          </h1>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              darkMode
+                ? 'bg-gray-700 text-yellow-300 hover:bg-gray-600'
+                : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+            }`}
+          >
+            {darkMode ? '☀️ Light' : '🌙 Dark'}
+          </button>
+        </div>
 
         {/* Add Task */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className={`rounded-lg shadow-sm p-6 mb-6 transition-colors ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="space-y-3">
             <div
               className="relative"
@@ -220,13 +233,21 @@ export default function Home() {
                 onFocus={() => setTitleFocused(true)}
                 onBlur={() => setTitleFocused(false)}
                 placeholder="Task title"
-                className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-black transition-colors ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-300 text-black placeholder-gray-500'
+                }`}
               />
 
               {titleFocused && (loadingSuggestions || aiSuggestions.length > 0) && (
-                <div className="absolute z-10 mt-1 w-full border rounded-md bg-gray-50 text-sm shadow">
+                <div className={`absolute z-10 mt-1 w-full border rounded-md text-sm shadow transition-colors ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600'
+                    : 'bg-gray-50 border-gray-300'
+                }`}>
                   {loadingSuggestions && (
-                    <div className="px-3 py-2 text-gray-500">
+                    <div className={`px-3 py-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       Improving title…
                     </div>
                   )}
@@ -249,7 +270,11 @@ export default function Home() {
                           setDescription(data.generatedDescription || "");
                         } catch { }
                       }}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                      className={`px-3 py-2 cursor-pointer transition-colors ${
+                        darkMode
+                          ? 'hover:bg-gray-600 text-gray-200'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
                     >
                       {s}
                     </div>
@@ -264,7 +289,11 @@ export default function Home() {
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Description (optional)"
-              className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-black transition-colors ${
+                darkMode
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-black placeholder-gray-500'
+              }`}
               rows={2}
             />
 
@@ -273,7 +302,11 @@ export default function Home() {
               <select
                 value={status}
                 onChange={e => setStatus(e.target.value)}
-                className="border rounded-md px-3 py-2 text-sm text-black"
+                className={`border rounded-md px-3 py-2 text-sm transition-colors ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-black'
+                }`}
               >
                 <option value="todo">Todo</option>
                 <option value="in-progress">In Progress</option>
@@ -283,7 +316,11 @@ export default function Home() {
               <select
                 value={priority}
                 onChange={e => setPriority(e.target.value)}
-                className="border rounded-md px-3 py-2 text-sm text-black"
+                className={`border rounded-md px-3 py-2 text-sm transition-colors ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-black'
+                }`}
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -295,13 +332,21 @@ export default function Home() {
                 value={dueDate}
                 min={today}
                 onChange={e => setDueDate(e.target.value)}
-                className="border rounded-md px-3 py-2 text-sm text-black"
+                className={`border rounded-md px-3 py-2 text-sm transition-colors ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-black'
+                }`}
               />
 
 
               <button
                 onClick={addTask}
-                className="bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800"
+                className={`rounded-md text-sm font-medium transition-colors ${
+                  darkMode
+                    ? 'bg-gray-700 text-white hover:bg-gray-600'
+                    : 'bg-black text-white hover:bg-gray-800'
+                }`}
               >
                 Add Task
               </button>
@@ -310,22 +355,22 @@ export default function Home() {
         </div>
 
         {/* Tasks */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Tasks</h2>
-          <ul className="divide-y">
+        <div className={`rounded-lg shadow-sm p-6 transition-colors ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Tasks</h2>
+          <ul className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
             {tasks.map(t => (
               <li key={t.id} className="py-4 flex justify-between items-start gap-4">
                 {/* Task info */}
                 <div>
-                  <p className="text-sm font-medium text-black">
+                  <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-black'}`}>
                     {t.title}
                   </p>
                   {t.description && (
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       {t.description}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {t.status} · {t.priority}
                     {t.dueDate && ` · due ${t.dueDate}`}
                   </p>
@@ -335,27 +380,37 @@ export default function Home() {
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => updateTask(t.id, { status: "in-progress" })}
-                    className="text-xs text-blue-600 px-2 py-1 border rounded hover:bg-gray-100"
+                    className={`text-xs px-2 py-1 border rounded transition-colors ${
+                      darkMode
+                        ? 'text-blue-400 border-blue-500 hover:bg-gray-700'
+                        : 'text-blue-600 border-blue-600 hover:bg-gray-100'
+                    }`}
                   >
                     In Progress
                   </button>
 
                   <button
                     onClick={() => setConfirmDelete(t)}
-                    className="text-xs px-2 text-red-600 py-1 border rounded hover:bg-gray-100"
+                    className={`text-xs px-2 py-1 border rounded transition-colors ${
+                      darkMode
+                        ? 'text-red-400 border-red-500 hover:bg-gray-700'
+                        : 'text-red-600 border-red-600 hover:bg-gray-100'
+                    }`}
                   >
                     Done
                   </button>
 
                   {confirmDelete && (
                     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                      <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
-                        <h3 className="text-lg font-medium text-gray-900">
+                      <div className={`rounded-lg shadow-lg w-full max-w-sm p-6 transition-colors ${
+                        darkMode ? 'bg-gray-800' : 'bg-white'
+                      }`}>
+                        <h3 className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                           Delete this task?
                         </h3>
 
-                        <p className="text-sm text-gray-600 mt-2">
-                          You marked <span className="font-medium text-black">
+                        <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          You marked <span className={`font-medium ${darkMode ? 'text-white' : 'text-black'}`}>
                             “{confirmDelete.title}”
                           </span> as done.
                           Would you like to delete it now?
@@ -364,14 +419,22 @@ export default function Home() {
                         <div className="mt-5 flex justify-end gap-3">
                           <button
                             onClick={() => setConfirmDelete(null)}
-                            className="px-4 py-2 text-sm rounded-md bg-red-100 text-red-700 hover:bg-red-200"
+                            className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                              darkMode
+                                ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
+                                : 'bg-red-100 text-red-700 hover:bg-red-200'
+                            }`}
                           >
                             No, keep it for later
                           </button>
 
                           <button
                             onClick={() => deleteTask(confirmDelete.id)}
-                            className="px-4 py-2 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
+                            className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                              darkMode
+                                ? 'bg-green-700 text-white hover:bg-green-600'
+                                : 'bg-green-600 text-white hover:bg-green-700'
+                            }`}
                           >
                             Yes, delete
                           </button>
@@ -384,7 +447,11 @@ export default function Home() {
 
                   <button
                     onClick={() => updateTask(t.id, { priority: "high" })}
-                    className="text-xs text-green-600 px-2 py-1 border rounded hover:bg-gray-100"
+                    className={`text-xs px-2 py-1 border rounded transition-colors ${
+                      darkMode
+                        ? 'text-green-400 border-green-500 hover:bg-gray-700'
+                        : 'text-green-600 border-green-600 hover:bg-gray-100'
+                    }`}
                   >
                     High Priority
                   </button>
@@ -393,7 +460,7 @@ export default function Home() {
             ))}
 
             {tasks.length === 0 && (
-              <p className="text-sm text-gray-500 py-6 text-center">
+              <p className={`text-sm py-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 No tasks yet.
               </p>
             )}
@@ -405,22 +472,30 @@ export default function Home() {
       {/* Copilot Floating Button */}
       <button
         onClick={() => setCopilotOpen(!copilotOpen)}
-        className="fixed bottom-6 right-6 h-12 w-12 rounded-full bg-black text-white flex items-center justify-center shadow-lg"
+        className={`fixed bottom-6 right-6 h-12 w-12 rounded-full text-white flex items-center justify-center shadow-lg transition-colors ${
+          darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-black hover:bg-gray-900'
+        }`}
       >
         ✦
       </button>
 
       {copilotOpen && (
-        <div className="fixed bottom-20 right-6 w-96 bg-white rounded-lg shadow-lg flex flex-col max-h-[70vh]">
+        <div className={`fixed bottom-20 right-6 w-96 rounded-lg shadow-lg flex flex-col max-h-[70vh] transition-colors ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
 
           {/* Chat messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`text-sm rounded-md px-3 py-2 max-w-[90%]
+                className={`text-sm rounded-md px-3 py-2 max-w-[90%] transition-colors
             ${msg.role === "user"
-                    ? "bg-black text-white ml-auto"
+                    ? darkMode
+                      ? "bg-blue-600 text-white ml-auto"
+                      : "bg-black text-white ml-auto"
+                    : darkMode
+                    ? "bg-gray-700 text-gray-100 mr-auto"
                     : "bg-gray-100 text-black mr-auto"
                   }`}
               >
@@ -431,18 +506,22 @@ export default function Home() {
             ))}
 
             {loadingAI && (
-              <div className="text-xs text-gray-500">Copilot is thinking…</div>
+              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Copilot is thinking…</div>
             )}
 
             <div ref={chatEndRef} />
           </div>
           {taskProposal && (
-            <div className="mt-3 border rounded-md p-3 bg-gray-50 text-sm">
-              <p className="font-medium text-gray-900 mb-2">
+            <div className={`mt-3 border rounded-md p-3 text-sm transition-colors ${
+              darkMode
+                ? 'bg-gray-700 border-gray-600'
+                : 'bg-gray-50 border-gray-300'
+            }`}>
+              <p className={`font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 Create this task?
               </p>
 
-              <ul className="text-xs text-gray-700 space-y-1">
+              <ul className={`text-xs space-y-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <li><b>Title:</b> {taskProposal.title}</li>
                 <li><b>Description:</b> {taskProposal.description}</li>
                 <li><b>Status:</b> {taskProposal.status}</li>
@@ -468,7 +547,11 @@ export default function Home() {
                     setCopilotInput("");
                     addSystemMessage("Anything else I can help you with?");
                   }}
-                  className="flex-1 bg-green-600 text-white rounded-md py-1"
+                  className={`flex-1 text-white rounded-md py-1 transition-colors ${
+                    darkMode
+                      ? 'bg-green-700 hover:bg-green-600'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
                 >
 
                   Create
@@ -476,7 +559,11 @@ export default function Home() {
 
                 <button
                   onClick={() => setTaskProposal(null)}
-                  className="flex-1 bg-red-100 text-red-700 rounded-md py-1"
+                  className={`flex-1 rounded-md py-1 transition-colors ${
+                    darkMode
+                      ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  }`}
                 >
                   Cancel
                 </button>
@@ -485,12 +572,16 @@ export default function Home() {
           )}
 
           {updateProposal && (
-            <div className="mt-3 border rounded-md p-3 bg-gray-50 text-sm">
-              <p className="font-medium text-gray-900 mb-2">
+            <div className={`mt-3 border rounded-md p-3 text-sm transition-colors ${
+              darkMode
+                ? 'bg-gray-700 border-gray-600'
+                : 'bg-gray-50 border-gray-300'
+            }`}>
+              <p className={`font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 Update this task?
               </p>
 
-              <ul className="text-xs text-gray-700 space-y-1">
+              <ul className={`text-xs space-y-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 {Object.entries(updateProposal.updates).map(([k, v]) => (
                   <li key={k}>
                     <b>{k}:</b> {String(v)}
@@ -521,14 +612,22 @@ export default function Home() {
                     setUpdateProposal(null);
                     fetchTasks();
                   }}
-                  className="flex-1 bg-green-600 text-white rounded-md py-1"
+                  className={`flex-1 text-white rounded-md py-1 transition-colors ${
+                    darkMode
+                      ? 'bg-green-700 hover:bg-green-600'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
                 >
                   Apply update
                 </button>
 
                 <button
                   onClick={() => setUpdateProposal(null)}
-                  className="flex-1 bg-red-100 text-red-700 rounded-md py-1"
+                  className={`flex-1 rounded-md py-1 transition-colors ${
+                    darkMode
+                      ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  }`}
                 >
                   Cancel
                 </button>
@@ -538,12 +637,16 @@ export default function Home() {
 
 
           {deleteProposal && (
-            <div className="mt-3 border rounded-md p-3 bg-red-50 text-sm">
-              <p className="font-medium text-red-700 mb-2">
+            <div className={`mt-3 border rounded-md p-3 text-sm transition-colors ${
+              darkMode
+                ? 'bg-red-900/20 border-red-800'
+                : 'bg-red-50 border-red-200'
+            }`}>
+              <p className={`font-medium mb-2 ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
                 Delete this task?
               </p>
 
-              <p className="text-xs text-gray-700">
+              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>
                 This action cannot be undone.
               </p>
 
@@ -566,14 +669,22 @@ export default function Home() {
                     setDeleteProposal(null);
                     fetchTasks();
                   }}
-                  className="flex-1 bg-red-600 text-white rounded-md py-1"
+                  className={`flex-1 text-white rounded-md py-1 transition-colors ${
+                    darkMode
+                      ? 'bg-red-700 hover:bg-red-600'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
                 >
                   Yes, delete
                 </button>
 
                 <button
                   onClick={() => setDeleteProposal(null)}
-                  className="flex-1 bg-gray-200 text-gray-800 rounded-md py-1"
+                  className={`flex-1 rounded-md py-1 transition-colors ${
+                    darkMode
+                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  }`}
                 >
                   Keep it
                 </button>
@@ -582,14 +693,24 @@ export default function Home() {
           )}
 
           {subtaskProposal && (
-            <div className="mt-3 border rounded-md p-3 bg-gray-50 text-sm max-h-48 overflow-y-auto flex flex-col">
-              <div className="flex items-center justify-between mb-2 sticky top-0 bg-gray-50">
-                <p className="font-medium text-black">
+            <div className={`mt-3 border rounded-md p-3 text-sm max-h-48 overflow-y-auto flex flex-col transition-colors ${
+              darkMode
+                ? 'bg-gray-700 border-gray-600'
+                : 'bg-gray-50 border-gray-300'
+            }`}>
+              <div className={`flex items-center justify-between mb-2 sticky top-0 ${
+                darkMode ? 'bg-gray-700' : 'bg-gray-50'
+              }`}>
+                <p className={`font-medium ${darkMode ? 'text-white' : 'text-black'}`}>
                   Suggested subtasks
                 </p>
                 <button
                   onClick={() => setSubtaskProposal(null)}
-                  className="text-gray-400 hover:text-gray-600 text-lg"
+                  className={`text-lg transition-colors ${
+                    darkMode
+                      ? 'text-gray-400 hover:text-gray-300'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
                 >
                   ✕
                 </button>
@@ -602,8 +723,8 @@ export default function Home() {
                     className="flex items-start justify-between py-1"
                   >
                     <div>
-                      <p className="font-medium text-black">{s.title}</p>
-                      <p className="text-xs text-gray-600">{s.description}</p>
+                      <p className={`font-medium ${darkMode ? 'text-white' : 'text-black'}`}>{s.title}</p>
+                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{s.description}</p>
                     </div>
 
                     <button
@@ -621,7 +742,11 @@ export default function Home() {
                         });
                         fetchTasks();
                       }}
-                      className="text-xs bg-green-600 text-white px-2 py-1 rounded flex-shrink-0"
+                      className={`text-xs text-white px-2 py-1 rounded flex-shrink-0 transition-colors ${
+                        darkMode
+                          ? 'bg-green-700 hover:bg-green-600'
+                          : 'bg-green-600 hover:bg-green-700'
+                      }`}
                     >
                       Add
                     </button>
@@ -636,17 +761,25 @@ export default function Home() {
 
 
           {/* Input box (sticks to bottom) */}
-          <div className="border-t p-3">
+          <div className={`border-t p-3 transition-colors ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <textarea
               value={copilotInput}
               onChange={e => setCopilotInput(e.target.value)}
               placeholder="Ask the copilot…"
               rows={2}
-              className="w-full border rounded-md px-3 py-2 text-sm text-black focus:ring-2 focus:ring-black"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-black transition-colors ${
+                darkMode
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-black placeholder-gray-500'
+              }`}
             />
             <button
               onClick={askCopilot}
-              className="mt-2 w-full bg-black text-white rounded-md text-sm py-2 hover:bg-gray-800"
+              className={`mt-2 w-full text-white rounded-md text-sm py-2 transition-colors ${
+                darkMode
+                  ? 'bg-gray-700 hover:bg-gray-600'
+                  : 'bg-black hover:bg-gray-800'
+              }`}
             >
               Ask
             </button>
